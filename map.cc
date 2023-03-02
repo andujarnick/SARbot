@@ -36,7 +36,7 @@ Node* add(Node *& root, Node *& previousNode, string chosenDirection, string lin
 bool isIntersection(Node * root);
 
 //chooses the correct default direction
-string chooseDirection(string line, int space1loc, int numDirections);
+string chooseDirection(string line, int space1loc, int numDirections, Node* intersection);
 
 //counts the number of directions given to the computer
 int numDirectionsCount(string line, int &space1loc, int &space2loc);
@@ -55,6 +55,9 @@ void moveThroughMaze(Node* &graph, Node* placeholder, stack<string> &backtrackin
 
 //Prints out all the intersections stored
 void printIntersections(Node* graph, stack<Node*> intersections);
+
+//Copies the node to the node stack
+void copyNode(Node* graph, Node* &intersection);
 
 int main(int argc, char *argv[]){
     
@@ -115,15 +118,15 @@ Node* add(Node *& root, Node *& previousNode, string chosenDirection, string lin
         return previousNode;
     }
     else if (chosenDirection == "LEFT")
-        add(root->left, root, chosenDirection);
+        return add(root->left, root, chosenDirection, line);
     else if (chosenDirection == "STRAIGHT")
-        add(root->straight, root, chosenDirection);
+        return add(root->straight, root, chosenDirection, line);
     else
-        add(root->right, root, chosenDirection);
+        return add(root->right, root, chosenDirection, line);
 }
 
 string chooseDirection(string line, int space1loc, int numDirections, Node* intersection){
-    if(intersection == NULL){
+    if(intersection == NULL){//none of the paths in front of the bot have ever been visited before
         if (line.substr(0, space1loc) == "L"){
             return "LEFT";
         }
@@ -136,8 +139,24 @@ string chooseDirection(string line, int space1loc, int numDirections, Node* inte
         else
             return "RIGHT";
     }
-    else{
-        //NEED TO READ INSTRUCTION FROM THE LINE AT THE INTERSECTION, IF IT'S NOT VISITED ALREADY CHOOSE OFF THAT
+    else{//one or more paths have already been visited before, came from backtracking
+        if(numDirections > 1){
+            //left doesn't need to be tried again, check for straight and then maybe right
+            int Slocation = line.find("S");
+            int Rlocation = line.find("R");
+            if((intersection->straight != NULL) && (Slocation != -1)){//if straight is an option in the string AND it has not been visited before
+                return "STRAIGHT";
+            }
+            else if((intersection->right != NULL) && (Rlocation != -1)){
+                return "RIGHT";
+            }
+            else{
+                return "AGAIN";//all the pathways at the intersection have been visited, backtracking needs to be applied again
+            }
+        }
+        else{
+            return "AGAIN";//signal to loop the backtracking again
+        }
     }
 }
 
@@ -217,6 +236,16 @@ void moveThroughMaze(Node* &graph, Node* placeholder, stack<string> &backtrackin
     cursor = graph;
     intersections.push(cursor);//starts the intersection list at the root
     
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     do{
         numDirections = 0;//reinitializes it every time
         cout << endl << "I'm telling the drive system to go straight for now. What's in front of me?" << endl;
@@ -234,6 +263,9 @@ void moveThroughMaze(Node* &graph, Node* placeholder, stack<string> &backtrackin
         if(chosenDirection == "DEADEND"){
             backtrack(graph, cursor, backtracking);
             chosenDirection = chooseDirection(line, space1loc, numDirections);
+            //if chosenDirection is again, loop again
+            //else go down the free pathway chosenDirection decides
+            
             //add()
             
         }
@@ -277,18 +309,17 @@ void printIntersections(Node* graph, stack<Node*> intersections){
 }
 
 void copyNode(Node* graph, Node* &intersection){
-    
-    
-    string data;//stored direction
-    int directionCount;
-    bool directionsLeft;
-    bool isIntersection;
-    
-    Node * left;
-    Node * right;
-    Node * straight;
-    Node * previous;
+    intersection->instruction = graph->instruction;
+    intersection->data = graph->data;
+    intersection->directionCount = graph->directionCount;
+    intersection->directionsLeft = graph->directionsLeft;
+    intersection->isIntersection = graph->isIntersection;
+    intersection->left = graph->left;
+    intersection->right = graph->right;
+    intersection->straight = graph->straight;
+    intersection->previous = graph->previous;
 }
 
-//idea: instead of moving the cursor to every single spot, why not just move it to every intersection. Then it just picks up where the cursor left off.
-//I need a STACK OF CURSORS for all the intersections.
+//The copyNode() function needs to copy intersections to the stack, but it also has to copy the intersection back when a new link is made. If it is copied back right after add that should mend the link
+
+//Make sure the instruction count is set back to 0 every time it's supposed to
